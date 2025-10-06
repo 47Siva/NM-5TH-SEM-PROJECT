@@ -34,7 +34,8 @@ exports.register = async (req, res) => {
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
-    if (!email || !password) return res.status(400).json({ msg: "All fields are required" });
+    if (!email || !password)
+      return res.status(400).json({ msg: "All fields are required" });
 
     const user = await User.findOne({ email });
     if (!user) return res.status(400).json({ msg: "Invalid credentials" });
@@ -42,13 +43,32 @@ exports.login = async (req, res) => {
     const isMatch = await user.comparePassword(password);
     if (!isMatch) return res.status(400).json({ msg: "Invalid credentials" });
 
-    // Generate tokens
+    // Generate access token
     const accessToken = generateAccessToken(user);
-    const refreshToken = require('crypto').randomBytes(64).toString('hex');
-    const expiryDate = getRefreshExpiryDate();
 
-    // Save refresh token
-    await RefreshToken.create({ token: refreshToken, userId: user._id, expiryDate });
+    // Check if user already has a refresh token
+    let existingToken = await RefreshToken.findOne({ userId: user._id });
+    console.log("Checking existing refresh token for user:", user._id);
+    console.log("Existing token:", existingToken);
+
+    let refreshToken;
+    if (existingToken) {
+      if (existingToken.expiryDate > new Date()) {
+        // Token exists & still valid → reuse it
+        refreshToken = existingToken.token;
+      } else {
+        // Token expired → delete old token & create new one
+        await RefreshToken.deleteOne({ _id: existingToken._id });
+        refreshToken = require("crypto").randomBytes(64).toString("hex");
+        const expiryDate = getRefreshExpiryDate();
+        await RefreshToken.create({ token: refreshToken, userId: user._id, expiryDate });
+      }
+    } else {
+      // No token exists → create new
+      refreshToken = require("crypto").randomBytes(64).toString("hex");
+      const expiryDate = getRefreshExpiryDate();
+      await RefreshToken.create({ token: refreshToken, userId: user._id, expiryDate });
+    }
 
     res.json({ msg: "Login successful", accessToken, refreshToken });
   } catch (err) {
@@ -56,6 +76,7 @@ exports.login = async (req, res) => {
     res.status(500).json({ msg: "Server error", error: err.message });
   }
 };
+
 
 // 👉 Refresh Token
 exports.refresh = async (req, res) => {

@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard | JWT Token Refresh and Expiry</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .dashboard-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      animation: fadeInUp 0.8s ease-out;
+    }
+    
+    .dashboard-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+      padding: 25px;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1), 0 0 0 1px rgba(255,255,255,0.2);
+      border: 1px solid rgba(255,255,255,0.2);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .dashboard-header::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #667eea, #764ba2);
+    }
+    
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    
+    .user-avatar {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 24px;
+      font-weight: bold;
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+      border: 3px solid rgba(255,255,255,0.2);
+    }
+    
+    .logout-btn {
+      background: linear-gradient(135deg, #ff4757, #ff3742);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-weight: 600;
+      box-shadow: 0 5px 15px rgba(255, 71, 87, 0.3);
+    }
+    
+    .logout-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(255, 71, 87, 0.4);
+    }
+    
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 25px;
+      margin-bottom: 30px;
+    }
+    
+    @media (min-width: 1200px) {
+      .dashboard-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    
+    .dashboard-card {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      padding: 30px;
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1), 0 0 0 1px rgba(255,255,255,0.2);
+      transition: all 0.3s ease;
+      border: 1px solid rgba(255,255,255,0.2);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .dashboard-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #667eea, #764ba2);
+    }
+    
+    .dashboard-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.15), 0 0 0 1px rgba(255,255,255,0.3);
+    }
+    
+    .card-title {
+      font-size: 20px;
+      margin-bottom: 15px;
+      color: #333;
+    }
+    
+    .card-content {
+      color: #666;
+      line-height: 1.6;
+    }
+    
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-top: 20px;
+    }
+    
+    .stat-item {
+      text-align: center;
+      padding: 15px;
+      background: #f8f9fa;
+      border-radius: 10px;
+    }
+    
+    .stat-number {
+      font-size: 24px;
+      font-weight: bold;
+      color: #6e8efb;
+    }
+    
+    .stat-label {
+      font-size: 14px;
+      color: #666;
+      margin-top: 5px;
+    }
+    
+    .nav-links {
+      display: flex;
+      gap: 15px;
+      margin-top: 20px;
+    }
+    
+    .nav-link {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      padding: 12px 20px;
+      border-radius: 12px;
+      text-decoration: none;
+      transition: all 0.3s ease;
+      font-weight: 600;
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+      border: none;
+      cursor: pointer;
+    }
+    
+    .nav-link:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+    }
+    
+    .token-info {
+      background: rgba(248, 249, 250, 0.8);
+      backdrop-filter: blur(5px);
+      padding: 15px;
+      border-radius: 12px;
+      margin-top: 15px;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      word-break: break-all;
+      border: 1px solid rgba(0,0,0,0.1);
+    }
+    
+    .token-status-valid {
+      color: #28a745;
+      font-weight: bold;
+    }
+    
+    .token-status-expired {
+      color: #dc3545;
+      font-weight: bold;
+    }
+    
+    .token-status-refreshing {
+      color: #ffc107;
+      font-weight: bold;
+    }
+    
+    /* Breadcrumb Navigation */
+    .breadcrumb {
+      margin-bottom: 20px;
+      padding: 15px 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .breadcrumb-link {
+      color: rgba(255,255,255,0.8);
+      text-decoration: none;
+      font-weight: 500;
+      transition: all 0.3s ease;
+    }
+    
+    .breadcrumb-link:hover {
+      color: white;
+      text-decoration: underline;
+    }
+    
+    .breadcrumb-separator {
+      color: rgba(255,255,255,0.6);
+      font-weight: bold;
+    }
+    
+    .breadcrumb-current {
+      color: white;
+      font-weight: 600;
+    }
+    
+    /* Animation for page load */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    /* Mobile Responsiveness */
+    @media (max-width: 768px) {
+      .dashboard-container {
+        padding: 15px;
+      }
+      
+      .dashboard-header {
+        flex-direction: column;
+        gap: 20px;
+        text-align: center;
+        padding: 20px;
+      }
+      
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+      }
+      
+      .dashboard-card {
+        padding: 20px;
+      }
+      
+      .nav-links {
+        flex-direction: column;
+        gap: 10px;
+      }
+      
+      .breadcrumb {
+        font-size: 14px;
+      }
+    }
+    
+    @media (max-width: 480px) {
+      .dashboard-container {
+        padding: 10px;
+      }
+      
+      .dashboard-header {
+        padding: 15px;
+      }
+      
+      .user-avatar {
+        width: 50px;
+        height: 50px;
+        font-size: 20px;
+      }
+      
+      .dashboard-card {
+        padding: 15px;
+      }
+      
+      .card-title {
+        font-size: 18px;
+      }
+    }
+    
+    /* Tablet responsiveness */
+    @media (min-width: 769px) and (max-width: 1199px) {
+      .dashboard-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+      }
+    }
+  </style>
+</head>
+<body style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; margin: 0; padding: 0;">
+  <div class="dashboard-container">
+    <!-- Navigation Breadcrumb -->
+    <nav class="breadcrumb">
+      <a href="index.html" class="breadcrumb-link">Home</a>
+      <span class="breadcrumb-separator">›</span>
+      <span class="breadcrumb-current">Dashboard</span>
+    </nav>
+    
+    <div class="dashboard-header">
+      <div class="user-info">
+        <div class="user-avatar" id="userAvatar">U</div>
+        <div>
+          <h2 id="welcomeMessage">Welcome!</h2>
+          <p id="userEmail">user@example.com</p>
+        </div>
+      </div>
+      <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
+
+    <div class="dashboard-grid">
+      <div class="dashboard-card">
+        <h3 class="card-title">Profile Management</h3>
+        <div class="card-content">
+          <p>Manage your personal information and account settings.</p>
+          <div class="nav-links">
+            <a href="profile.html" class="nav-link">View Profile</a>
+            <a href="profile.html" class="nav-link">Edit Profile</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="dashboard-card">
+        <h3 class="card-title">Security</h3>
+        <div class="card-content">
+          <p>Your account security information and token status.</p>
+          <div class="token-info">
+            <strong>Access Token:</strong><br>
+            <span id="accessTokenStatus" class="token-status-valid">Valid</span><br>
+            <small id="tokenTimeRemaining">Expires in: 15 min</small>
+          </div>
+          <div class="token-info">
+            <strong>Refresh Token:</strong><br>
+            <span id="refreshTokenStatus" class="token-status-valid">Active</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="dashboard-card">
+        <h3 class="card-title">Account Statistics</h3>
+        <div class="card-content">
+          <div class="stats-grid">
+            <div class="stat-item">
+              <div class="stat-number" id="loginCount">0</div>
+              <div class="stat-label">Total Logins</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-number" id="sessionTime">0</div>
+              <div class="stat-label">Session Time (min)</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-number" id="lastLogin">-</div>
+              <div class="stat-label">Last Login</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dashboard-card">
+        <h3 class="card-title">Quick Actions</h3>
+        <div class="card-content">
+          <p>Common tasks and shortcuts.</p>
+          <div class="nav-links">
+            <a href="profile.html" class="nav-link">Update Profile</a>
+            <button class="nav-link" onclick="manualRefreshToken()">Refresh Token</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let tokenCreatedTime = Date.now();
+    let autoRefreshInterval = null;
+    let sessionTimeInterval = null;
+    let tokenExpiryInterval = null;
+    const ACCESS_TOKEN_EXPIRY_MS = 15 * 60 * 1000; // 15 minutes
+    const AUTO_REFRESH_BEFORE_MS = 2 * 60 * 1000; // Auto-refresh 2 minutes before expiry
+    
+    // Check authentication on page load
+    window.addEventListener('load', async () => {
+      const accessToken = localStorage.getItem('accessToken');
+      const refreshToken = localStorage.getItem('refreshToken');
+      
+      if (!accessToken || !refreshToken) {
+        alert('Please login first');
+        window.location.href = 'login.html';
+        return;
+      }
+      
+      // Initialize token creation time
+      const storedTokenTime = localStorage.getItem('tokenCreatedTime');
+      if (storedTokenTime) {
+        tokenCreatedTime = parseInt(storedTokenTime);
+      } else {
+        tokenCreatedTime = Date.now();
+        localStorage.setItem('tokenCreatedTime', tokenCreatedTime.toString());
+      }
+      
+      // Load user profile
+      await loadUserProfile();
+      
+      // Start all timers
+      updateSessionTime();
+      updateTokenExpiry();
+      
+      // Update session time every minute
+      sessionTimeInterval = setInterval(updateSessionTime, 60000);
+      
+      // Update token expiry display every 10 seconds
+      tokenExpiryInterval = setInterval(updateTokenExpiry, 10000);
+      
+      // Set up auto-refresh (check every 30 seconds)
+      autoRefreshInterval = setInterval(checkAndAutoRefresh, 30000);
+    });
+    
+    async function loadUserProfile() {
+      try {
+        const accessToken = localStorage.getItem('accessToken');
+        const response = await fetch('/api/auth/profile', {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          const user = data.user;
+          
+          console.log('User profile data received:', user);
+          
+          document.getElementById('welcomeMessage').textContent = `Welcome, ${user.username}!`;
+          document.getElementById('userEmail').textContent = user.email;
+          document.getElementById('userAvatar').textContent = user.username.charAt(0).toUpperCase();
+          
+          // Display login count
+          document.getElementById('loginCount').textContent = user.loginCount || 0;
+          
+          // Display last login
+          console.log('User lastLogin data:', user.lastLogin);
+          if (user.lastLogin) {
+            const lastLoginDate = new Date(user.lastLogin);
+            const now = new Date();
+            
+            // Check if the date is valid
+            if (isNaN(lastLoginDate.getTime())) {
+              console.error('Invalid lastLogin date:', user.lastLogin);
+              document.getElementById('lastLogin').textContent = 'Invalid date';
+              return;
+            }
+            
+            const diffTime = Math.abs(now - lastLoginDate);
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+            
+            if (diffDays === 0) {
+              const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
+              if (diffHours === 0) {
+                const diffMinutes = Math.floor(diffTime / (1000 * 60));
+                document.getElementById('lastLogin').textContent = diffMinutes < 1 ? 'Just now' : `${diffMinutes}m ago`;
+              } else {
+                document.getElementById('lastLogin').textContent = `${diffHours}h ago`;
+              }
+            } else if (diffDays === 1) {
+              document.getElementById('lastLogin').textContent = 'Yesterday';
+            } else if (diffDays < 7) {
+              document.getElementById('lastLogin').textContent = `${diffDays}d ago`;
+            } else {
+              document.getElementById('lastLogin').textContent = lastLoginDate.toLocaleDateString();
+            }
+          } else {
+            console.log('No lastLogin data found for user');
+            document.getElementById('lastLogin').textContent = 'Never';
+          }
+        } else if (response.status === 403) {
+          // Token expired, try to refresh
+          await autoRefreshToken();
+          await loadUserProfile(); // Retry after refresh
+        } else {
+          throw new Error('Failed to load profile');
+        }
+      } catch (error) {
+        console.error('Error loading profile:', error);
+        alert('Error loading profile. Please login again.');
+        window.location.href = 'login.html';
+      }
+    }
+    
+    function updateSessionTime() {
+      const sessionMinutes = Math.floor((Date.now() - tokenCreatedTime) / 60000);
+      document.getElementById('sessionTime').textContent = sessionMinutes;
+    }
+    
+    function updateTokenExpiry() {
+      const elapsedTime = Date.now() - tokenCreatedTime;
+      const remainingTime = ACCESS_TOKEN_EXPIRY_MS - elapsedTime;
+      
+      if (remainingTime <= 0) {
+        document.getElementById('accessTokenStatus').textContent = 'Expired';
+        document.getElementById('accessTokenStatus').className = 'token-status-expired';
+        document.getElementById('tokenTimeRemaining').textContent = 'Token expired - will auto-refresh';
+      } else {
+        const remainingMinutes = Math.floor(remainingTime / 60000);
+        const remainingSeconds = Math.floor((remainingTime % 60000) / 1000);
+        
+        document.getElementById('accessTokenStatus').textContent = 'Valid';
+        document.getElementById('accessTokenStatus').className = 'token-status-valid';
+        document.getElementById('tokenTimeRemaining').textContent = 
+          `Expires in: ${remainingMinutes}m ${remainingSeconds}s`;
+      }
+    }
+    
+    async function checkAndAutoRefresh() {
+      const elapsedTime = Date.now() - tokenCreatedTime;
+      const remainingTime = ACCESS_TOKEN_EXPIRY_MS - elapsedTime;
+      
+      // Auto-refresh if less than 2 minutes remaining
+      if (remainingTime <= AUTO_REFRESH_BEFORE_MS && remainingTime > 0) {
+        console.log('Auto-refreshing token...');
+        await autoRefreshToken();
+      } else if (remainingTime <= 0) {
+        // Token already expired, refresh it
+        console.log('Token expired, refreshing...');
+        await autoRefreshToken();
+      }
+    }
+    
+    async function autoRefreshToken() {
+      try {
+        const refreshTokenValue = localStorage.getItem('refreshToken');
+        
+        if (!refreshTokenValue) {
+          throw new Error('No refresh token found');
+        }
+        
+        document.getElementById('accessTokenStatus').textContent = 'Refreshing...';
+        document.getElementById('accessTokenStatus').className = 'token-status-refreshing';
+        
+        const response = await fetch('/api/auth/refresh', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ refreshToken: refreshTokenValue })
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          localStorage.setItem('accessToken', data.accessToken);
+          
+          // Reset token creation time
+          tokenCreatedTime = Date.now();
+          localStorage.setItem('tokenCreatedTime', tokenCreatedTime.toString());
+          
+          // Update UI
+          document.getElementById('accessTokenStatus').textContent = 'Valid (Auto-refreshed)';
+          document.getElementById('accessTokenStatus').className = 'token-status-valid';
+          updateSessionTime();
+          updateTokenExpiry();
+          
+          console.log('Token auto-refreshed successfully');
+        } else {
+          throw new Error('Token refresh failed');
+        }
+      } catch (error) {
+        console.error('Auto-refresh error:', error);
+        clearAllIntervals();
+        alert('Session expired. Please login again.');
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('tokenCreatedTime');
+        window.location.href = 'login.html';
+      }
+    }
+    
+    async function manualRefreshToken() {
+      try {
+        const refreshTokenValue = localStorage.getItem('refreshToken');
+        
+        if (!refreshTokenValue) {
+          console.log('No refresh token found, reloading page...');
+          window.location.reload();
+          return;
+        }
+        
+        document.getElementById('accessTokenStatus').textContent = 'Refreshing...';
+        document.getElementById('accessTokenStatus').className = 'token-status-refreshing';
+        
+        const response = await fetch('/api/auth/refresh', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ refreshToken: refreshTokenValue })
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          localStorage.setItem('accessToken', data.accessToken);
+          
+          // Reset token creation time
+          tokenCreatedTime = Date.now();
+          localStorage.setItem('tokenCreatedTime', tokenCreatedTime.toString());
+          
+          // Update UI
+          document.getElementById('accessTokenStatus').textContent = 'Valid (Refreshed)';
+          document.getElementById('accessTokenStatus').className = 'token-status-valid';
+          updateSessionTime();
+          updateTokenExpiry();
+          
+          // Silently reload page to refresh all data
+          console.log('Token refreshed successfully, reloading page...');
+          setTimeout(() => {
+            window.location.reload();
+          }, 500);
+        } else {
+          const errorData = await response.json();
+          console.error('Refresh failed:', errorData);
+          // Silently reload page instead of showing error
+          window.location.reload();
+        }
+      } catch (error) {
+        console.error('Token refresh error:', error);
+        // Silently reload page instead of showing error
+        window.location.reload();
+      }
+    }
+    
+    function clearAllIntervals() {
+      if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+      if (sessionTimeInterval) clearInterval(sessionTimeInterval);
+      if (tokenExpiryInterval) clearInterval(tokenExpiryInterval);
+    }
+    
+    async function logout() {
+      try {
+        const refreshToken = localStorage.getItem('refreshToken');
+        const response = await fetch('/api/auth/logout', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ refreshToken })
+        });
+        
+        // Clear all intervals
+        clearAllIntervals();
+        
+        // Clear all local storage
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('tokenCreatedTime');
+        
+        alert('Logged out successfully!');
+        window.location.href = 'index.html';
+      } catch (error) {
+        console.error('Logout error:', error);
+        // Still clear storage and redirect even if logout fails
+        clearAllIntervals();
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('tokenCreatedTime');
+        window.location.href = 'index.html';
+      }
+    }
+    
+    // Clear intervals when page is closed
+    window.addEventListener('beforeunload', () => {
+      clearAllIntervals();
+    });
+  </script>
+</body>
+</html>

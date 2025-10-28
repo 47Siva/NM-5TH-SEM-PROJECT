@@ -8,7 +8,7 @@
       "type": "node",
       "request": "launch",
       "name": "Debug Node Server",
-      "program": "${workspaceFolder}/src/server.js",
+      "program": "${workspaceFolder}/server.js",
       "console": "integratedTerminal",
       "skipFiles": ["<node_internals>/**"]
     }

@@ -6,7 +6,11 @@ const userSchema = new mongoose.Schema({
   email:    { type: String, required: true, unique: true },
   password: { type: String, required: true },
   roles:    { type: [String], default: ['USER'] },
+  loginCount: { type: Number, default: 0 },
+  lastLogin: { type: Date, default: null },
   createdAt:{ type: Date, default: Date.now }
+}, {
+  timestamps: true // This will add createdAt and updatedAt automatically
 });
 
 // Password hash before save

@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profile | JWT Token Refresh and Expiry</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .profile-container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+    .profile-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+      padding: 20px;
+      background: white;
+      border-radius: 15px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    
+    .profile-info {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+    
+    .profile-avatar {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #6e8efb, #a777e3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 32px;
+      font-weight: bold;
+    }
+    
+    .profile-details h2 {
+      margin: 0 0 5px 0;
+      color: #333;
+    }
+    
+    .profile-details p {
+      margin: 0;
+      color: #666;
+    }
+    
+    .back-btn {
+      background: #6e8efb;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: 0.3s;
+    }
+    
+    .back-btn:hover {
+      background: #5a6de0;
+    }
+    
+    .profile-form {
+      background: white;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    
+    .form-group {
+      margin-bottom: 20px;
+    }
+    
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      color: #333;
+      font-weight: 500;
+    }
+    
+    .form-group input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 16px;
+      transition: 0.3s;
+    }
+    
+    .form-group input:focus {
+      outline: none;
+      border-color: #6e8efb;
+      box-shadow: 0 0 0 3px rgba(110, 142, 251, 0.1);
+    }
+    
+    .form-group input:disabled {
+      background: #f8f9fa;
+      color: #666;
+    }
+    
+    .btn-group {
+      display: flex;
+      gap: 15px;
+      margin-top: 30px;
+    }
+    
+    .btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: 0.3s;
+    }
+    
+    .btn-primary {
+      background: #6e8efb;
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background: #5a6de0;
+    }
+    
+    .btn-secondary {
+      background: #6c757d;
+      color: white;
+    }
+    
+    .btn-secondary:hover {
+      background: #5a6268;
+    }
+    
+    .btn-danger {
+      background: #ff4757;
+      color: white;
+    }
+    
+    .btn-danger:hover {
+      background: #ff3742;
+    }
+    
+    .account-info {
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 10px;
+      margin-top: 30px;
+    }
+    
+    .account-info h3 {
+      margin: 0 0 15px 0;
+      color: #333;
+    }
+    
+    .info-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid #e9ecef;
+    }
+    
+    .info-item:last-child {
+      border-bottom: none;
+    }
+    
+    .info-label {
+      font-weight: 500;
+      color: #666;
+    }
+    
+    .info-value {
+      color: #333;
+    }
+    
+    .edit-mode {
+      display: none;
+    }
+    
+    .edit-mode.active {
+      display: block;
+    }
+    
+    .view-mode {
+      display: block;
+    }
+    
+    .view-mode.hidden {
+      display: none;
+    }
+    
+    /* Mobile Responsiveness */
+    @media (max-width: 768px) {
+      .profile-container {
+        padding: 15px;
+      }
+      
+      .profile-header {
+        flex-direction: column;
+        gap: 20px;
+        text-align: center;
+        padding: 20px;
+      }
+      
+      .profile-info {
+        flex-direction: column;
+        gap: 15px;
+      }
+      
+      .profile-form {
+        padding: 20px;
+      }
+      
+      .btn-group {
+        flex-direction: column;
+        gap: 10px;
+      }
+    }
+    
+    @media (max-width: 480px) {
+      .profile-container {
+        padding: 10px;
+      }
+      
+      .profile-header {
+        padding: 15px;
+      }
+      
+      .profile-avatar {
+        width: 60px;
+        height: 60px;
+        font-size: 24px;
+      }
+      
+      .profile-form {
+        padding: 15px;
+      }
+      
+      .form-group input {
+        padding: 12px 14px;
+      }
+      
+      .btn {
+        padding: 12px;
+      }
+    }
+  </style>
+</head>
+<body style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; margin: 0; padding: 0;">
+  <div class="profile-container">
+    <div class="profile-header">
+      <div class="profile-info">
+        <div class="profile-avatar" id="profileAvatar">U</div>
+        <div class="profile-details">
+          <h2 id="profileUsername">Username</h2>
+          <p id="profileEmail">user@example.com</p>
+        </div>
+      </div>
+      <a href="dashboard.html" class="back-btn">← Back to Dashboard</a>
+    </div>
+
+    <div class="profile-form">
+      <h3>Profile Information</h3>
+      
+      <!-- View Mode -->
+      <div id="viewMode" class="view-mode">
+        <div class="form-group">
+          <label>Username</label>
+          <input type="text" id="viewUsername" disabled>
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="viewEmail" disabled>
+        </div>
+        <div class="form-group">
+          <label>Account Created</label>
+          <input type="text" id="viewCreatedAt" disabled>
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-primary" onclick="toggleEditMode()">Edit Profile</button>
+          <button class="btn btn-danger" onclick="logout()">Logout</button>
+        </div>
+      </div>
+
+      <!-- Edit Mode -->
+      <div id="editMode" class="edit-mode">
+        <div class="form-group">
+          <label>Username</label>
+          <input type="text" id="editUsername" placeholder="Enter username">
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="editEmail" placeholder="Enter email">
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-primary" onclick="saveProfile()">Save Changes</button>
+          <button class="btn btn-secondary" onclick="cancelEdit()">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="account-info">
+      <h3>Account Information</h3>
+      <div class="info-item">
+        <span class="info-label">User ID:</span>
+        <span class="info-value" id="userId">-</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Roles:</span>
+        <span class="info-value" id="userRoles">USER</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Last Updated:</span>
+        <span class="info-value" id="lastUpdated">-</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentUser = null;
+    let originalData = {};
+
+    // Check authentication on page load
+    window.addEventListener('load', async () => {
+      const accessToken = localStorage.getItem('accessToken');
+      const refreshToken = localStorage.getItem('refreshToken');
+      
+      if (!accessToken || !refreshToken) {
+        alert('Please login first');
+        window.location.href = 'login.html';
+        return;
+      }
+      
+      // Preserve session time when navigating
+      const savedSessionStart = localStorage.getItem('sessionStartTime');
+      if (!savedSessionStart) {
+        localStorage.setItem('sessionStartTime', Date.now().toString());
+      }
+      
+      await loadUserProfile();
+    });
+
+    async function loadUserProfile() {
+      try {
+        const accessToken = localStorage.getItem('accessToken');
+        const response = await fetch('/api/auth/profile', {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          currentUser = data.user;
+          originalData = { ...data.user };
+          displayUserProfile(data.user);
+        } else if (response.status === 403) {
+          // Token expired, try to refresh
+          await refreshToken();
+          await loadUserProfile(); // Retry after refresh
+        } else {
+          throw new Error('Failed to load profile');
+        }
+      } catch (error) {
+        console.error('Error loading profile:', error);
+        alert('Error loading profile. Please login again.');
+        window.location.href = 'login.html';
+      }
+    }
+
+    function displayUserProfile(user) {
+      // Update header
+      document.getElementById('profileAvatar').textContent = user.username.charAt(0).toUpperCase();
+      document.getElementById('profileUsername').textContent = user.username;
+      document.getElementById('profileEmail').textContent = user.email;
+
+      // Update view mode
+      document.getElementById('viewUsername').value = user.username;
+      document.getElementById('viewEmail').value = user.email;
+      document.getElementById('viewCreatedAt').value = new Date(user.createdAt).toLocaleDateString();
+
+      // Update account info
+      document.getElementById('userId').textContent = user._id;
+      document.getElementById('userRoles').textContent = user.roles.join(', ');
+      document.getElementById('lastUpdated').textContent = new Date(user.createdAt).toLocaleDateString();
+    }
+
+    function toggleEditMode() {
+      document.getElementById('viewMode').classList.add('hidden');
+      document.getElementById('editMode').classList.add('active');
+      
+      // Populate edit fields
+      document.getElementById('editUsername').value = currentUser.username;
+      document.getElementById('editEmail').value = currentUser.email;
+    }
+
+    function cancelEdit() {
+      document.getElementById('viewMode').classList.remove('hidden');
+      document.getElementById('editMode').classList.remove('active');
+    }
+
+    async function saveProfile() {
+      try {
+        const username = document.getElementById('editUsername').value.trim();
+        const email = document.getElementById('editEmail').value.trim();
+
+        if (!username || !email) {
+          alert('Please fill in all fields');
+          return;
+        }
+
+        const accessToken = localStorage.getItem('accessToken');
+        const response = await fetch('/api/auth/profile', {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ username, email })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          currentUser = data.user;
+          displayUserProfile(data.user);
+          cancelEdit();
+          alert('Profile updated successfully!');
+        } else if (response.status === 403) {
+          await refreshToken();
+          await saveProfile(); // Retry after refresh
+        } else {
+          const errorData = await response.json();
+          alert(errorData.msg || 'Failed to update profile');
+        }
+      } catch (error) {
+        console.error('Error updating profile:', error);
+        alert('Error updating profile. Please try again.');
+      }
+    }
+
+    async function refreshToken() {
+      try {
+        const refreshToken = localStorage.getItem('refreshToken');
+        const response = await fetch('/api/auth/refresh', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ refreshToken })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          localStorage.setItem('accessToken', data.accessToken);
+        } else {
+          throw new Error('Token refresh failed');
+        }
+      } catch (error) {
+        console.error('Token refresh error:', error);
+        alert('Session expired. Please login again.');
+        window.location.href = 'login.html';
+      }
+    }
+
+    async function logout() {
+      try {
+        const refreshToken = localStorage.getItem('refreshToken');
+        const response = await fetch('/api/auth/logout', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ refreshToken })
+        });
+
+        // Clear local storage regardless of response
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+
+        alert('Logged out successfully!');
+        window.location.href = 'index.html';
+      } catch (error) {
+        console.error('Logout error:', error);
+        // Still redirect even if logout fails
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        window.location.href = 'index.html';
+      }
+    }
+  </script>
+</body>
+</html>

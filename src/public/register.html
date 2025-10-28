@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Register</title>
+  <title>Register | JWT Token Refresh and Expiry</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -34,18 +34,65 @@
     const form = document.getElementById('registerForm');
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
+      
+      // Show loading state
+      const submitBtn = form.querySelector('button[type="submit"]');
+      const originalText = submitBtn.textContent;
+      submitBtn.textContent = 'Creating Account...';
+      submitBtn.disabled = true;
+      
       const username = document.getElementById('username').value;
       const email = document.getElementById('email').value;
       const password = document.getElementById('password').value;
 
-      const res = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, email, password })
-      });
+      try {
+        const res = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, email, password })
+        });
 
-      const data = await res.json();
-      document.getElementById('msg').innerText = data.msg || data.error;
+        const data = await res.json();
+        
+        if (res.ok) {
+          // Registration successful, now auto-login
+          document.getElementById('msg').innerText = 'Account created! Logging you in...';
+          
+          // Auto-login after successful registration
+          const loginRes = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+          });
+          
+          const loginData = await loginRes.json();
+          
+          if (loginRes.ok && loginData.accessToken) {
+            localStorage.setItem('accessToken', loginData.accessToken);
+            localStorage.setItem('refreshToken', loginData.refreshToken);
+            
+            // Show success message and redirect
+            document.getElementById('msg').innerText = 'Welcome! Redirecting to dashboard...';
+            setTimeout(() => {
+              window.location.href = 'dashboard.html';
+            }, 1500);
+          } else {
+            document.getElementById('msg').innerText = 'Account created! Please login manually.';
+            setTimeout(() => {
+              window.location.href = 'login.html';
+            }, 2000);
+          }
+        } else {
+          document.getElementById('msg').innerText = data.msg || data.error;
+        }
+      } catch (error) {
+        console.error('Registration error:', error);
+        document.getElementById('msg').innerText = 'Registration failed. Please try again.';
+      } finally {
+        // Reset button state
+        submitBtn.textContent = originalText;
+        submitBtn.disabled = false;
+      }
     });
   </script>
 </body>

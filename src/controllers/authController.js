@@ -43,11 +43,20 @@ exports.login = async (req, res) => {
     const isMatch = await user.comparePassword(password);
     if (!isMatch) return res.status(400).json({ msg: "Invalid credentials" });
 
+    // Update login statistics
+    user.loginCount = (user.loginCount || 0) + 1;
+    user.lastLogin = new Date();
+    await user.save();
+    console.log(`User ${user.email} login updated - Count: ${user.loginCount}, Last Login: ${user.lastLogin}`);
+
     // Generate access token
     const accessToken = generateAccessToken(user);
 
-    // Check if user already has a refresh token
-    let existingToken = await RefreshToken.findOne({ userId: user._id });
+    // Check if user already has a refresh token (not revoked)
+    let existingToken = await RefreshToken.findOne({ 
+      userId: user._id,
+      revoked: false 
+    });
     console.log("Checking existing refresh token for user:", user._id);
     console.log("Existing token:", existingToken);
 
@@ -59,13 +68,13 @@ exports.login = async (req, res) => {
       } else {
         // Token expired → delete old token & create new one
         await RefreshToken.deleteOne({ _id: existingToken._id });
-        refreshToken = require("crypto").randomBytes(64).toString("hex");
+        refreshToken = crypto.randomBytes(64).toString("hex");
         const expiryDate = getRefreshExpiryDate();
         await RefreshToken.create({ token: refreshToken, userId: user._id, expiryDate });
       }
     } else {
       // No token exists → create new
-      refreshToken = require("crypto").randomBytes(64).toString("hex");
+      refreshToken = crypto.randomBytes(64).toString("hex");
       const expiryDate = getRefreshExpiryDate();
       await RefreshToken.create({ token: refreshToken, userId: user._id, expiryDate });
     }
@@ -80,10 +89,118 @@ exports.login = async (req, res) => {
 
 // 👉 Refresh Token
 exports.refresh = async (req, res) => {
-  res.json({ msg: "Refresh token not implemented yet" });
+  try {
+    const { refreshToken } = req.body;
+    
+    if (!refreshToken) {
+      return res.status(401).json({ msg: "Refresh token required" });
+    }
+
+    // Find the refresh token in database
+    const tokenDoc = await RefreshToken.findOne({ 
+      token: refreshToken, 
+      revoked: false 
+    }).populate('userId');
+
+    if (!tokenDoc) {
+      return res.status(403).json({ msg: "Invalid refresh token" });
+    }
+
+    // Check if token is expired
+    if (tokenDoc.expiryDate < new Date()) {
+      await RefreshToken.deleteOne({ _id: tokenDoc._id });
+      return res.status(403).json({ msg: "Refresh token expired" });
+    }
+
+    // Generate new access token
+    const newAccessToken = generateAccessToken(tokenDoc.userId);
+
+    res.json({ 
+      msg: "Token refreshed successfully", 
+      accessToken: newAccessToken 
+    });
+  } catch (error) {
+    console.error("Refresh error:", error);
+    res.status(500).json({ msg: "Server error", error: error.message });
+  }
 };
 
 // 👉 Logout
 exports.logout = async (req, res) => {
-  res.json({ msg: "Logout not implemented yet" });
+  try {
+    const { refreshToken } = req.body;
+    
+    if (!refreshToken) {
+      return res.status(400).json({ msg: "Refresh token required" });
+    }
+
+    // Revoke the refresh token
+    const result = await RefreshToken.findOneAndUpdate(
+      { token: refreshToken },
+      { revoked: true },
+      { new: true }
+    );
+
+    if (!result) {
+      return res.status(404).json({ msg: "Refresh token not found" });
+    }
+
+    res.json({ msg: "Logout successful" });
+  } catch (error) {
+    console.error("Logout error:", error);
+    res.status(500).json({ msg: "Server error", error: error.message });
+  }
+};
+
+// 👉 Get User Profile
+exports.getProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select('-password');
+    if (!user) {
+      return res.status(404).json({ msg: "User not found" });
+    }
+    console.log(`Profile requested for ${user.email} - Login Count: ${user.loginCount}, Last Login: ${user.lastLogin}`);
+    res.json({ user });
+  } catch (error) {
+    console.error("Get profile error:", error);
+    res.status(500).json({ msg: "Server error", error: error.message });
+  }
+};
+
+// 👉 Update User Profile
+exports.updateProfile = async (req, res) => {
+  try {
+    const { username, email } = req.body;
+    const userId = req.user.id;
+
+    // Check if email is already taken by another user
+    if (email) {
+      const existingUser = await User.findOne({ 
+        email, 
+        _id: { $ne: userId } 
+      });
+      if (existingUser) {
+        return res.status(400).json({ msg: "Email already exists" });
+      }
+    }
+
+    // Update user
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { username, email },
+      { new: true, select: '-password' }
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({ msg: "User not found" });
+    }
+
+    res.json({ 
+      msg: "Profile updated successfully", 
+      user: updatedUser 
+    });
+  } catch (error) {
+    console.error("Update profile error:", error);
+    res.status(500).json({ msg: "Server error", error: error.message });
+  }
 };
